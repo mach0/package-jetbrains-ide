@@ -29,9 +29,9 @@ supportedEditions = ['community', 'professional']
 
 
 def cleanup(code, log):
-    if util.check_folder(os.path.join(util.get_script_path(), "tmp"), logger, False, False):
-        if not util.delete_folder(os.path.join(util.get_script_path(), "tmp"), logger, True):
-            log.error("%s does exist and can not be deleted." % os.path.join(util.get_script_path(), "tmp"))
+    if util.check_folder(os.path.join(script_path, "tmp"), logger, False, False):
+        if not util.delete_folder(os.path.join(script_path, "tmp"), logger, True):
+            log.error("%s does exist and can not be deleted." % os.path.join(script_path, "tmp"))
             sys.exit(-1)
     sys.exit(code)
 
@@ -76,6 +76,42 @@ def get_download_link(varnames, edition, log, embeddedJava):
         else:
             log.error("Error while parsing '%s': No '%s' in dictionary." % (newVersionURL % varname, varname))
     return None
+
+def fix_vm_options(build_root, ide, appname, bits=""):
+    # Fixing vmoptions file(s)
+    file1 = open(os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname), "a")
+    file2 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s.vmoptions" % args.ide), "r")
+    file3 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s.vmoptions2" % args.ide), "w")
+    file1.write("\nOriginal pycharm.vmoptions:\n")
+    for line in file2:
+        file1.write(line)
+        if "yjpagent" not in line:
+            file3.write(line)
+    file1.close()
+    file2.close()
+    file3.close()
+    fullpath = os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin",
+                                         "%s.vmoptions" % args.ide)
+    if not util.delete_file(fullpath, logger):
+        logger.error("Error while deleting '%s'." % fullpath)
+        cleanup(-1, logger)
+
+    p1 = os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin",
+                                       "%s.vmoptions2" % args.ide)
+    p2 = os.path.join(build_root, "usr", "share",
+                                       "jetbrains", appname, "bin",
+                                       "%s.vmoptions" % appname)
+    if not util.copy_file(p1, p2, logger):
+        logger.error("Error while copying '{} to '{}'.".format(p1, p2))
+        cleanup(-1, logger)
+    fullpath = os.path.join(build_root, "usr", "share", "jetbrains",
+                                         appname, "bin",
+                                         "%s.vmoptions2" % args.ide)
+    if not util.delete_file(fullpath, logger):
+        logger.error(fullpath)
+        cleanup(-1, logger)
+
+
 
 # Configure ArgumentParser
 parser = argparse.ArgumentParser(prog="package.py", epilog="Supported IDEs: %s\nSupported Editions: %s"
@@ -137,134 +173,105 @@ if args.check:
         print("%s %s is not installed." % (args.ide, args.edition))
     sys.exit(0)
 
+
+appname = "{}-{}".format(args.ide, args.edition)
+script_path = util.get_script_path()
+build_root = os.path.join(script_path, "tmp", "root")
+
 # Checking folders
-if not util.check_folder(os.path.join(util.get_script_path(), "output"), logger, False, True):
-    if not util.create_folder(os.path.join(util.get_script_path(), "output")):
-        logger.error("%s does not exist and can not be created." % os.path.join(util.get_script_path(), "output"))
+if not util.check_folder(os.path.join(script_path, "output"), logger, False, True):
+    if not util.create_folder(os.path.join(script_path, "output")):
+        logger.error("%s does not exist and can not be created." % os.path.join(script_path, "output"))
         sys.exit(-1)
 
-if util.check_folder(os.path.join(util.get_script_path(), "tmp"), logger, False, True):
-    if not util.delete_folder(os.path.join(util.get_script_path(), "tmp"), logger, True):
-        logger.error("%s does exist and can not be deleted." % os.path.join(util.get_script_path(), "tmp"))
+if False:
+    if util.check_folder(os.path.join(script_path, "tmp"), logger, False, True):
+        if not util.delete_folder(os.path.join(script_path, "tmp"), logger, True):
+            logger.error("%s does exist and can not be deleted." % os.path.join(script_path, "tmp"))
         sys.exit(-1)
 
-for folder in [os.path.join(util.get_script_path(), "tmp"),
-               os.path.join(util.get_script_path(), "tmp", "root", "usr", "share", "jetbrains", args.ide),
-               os.path.join(util.get_script_path(), "tmp", "root", "usr", "share", "applications"),
-               os.path.join(util.get_script_path(), "tmp", "root", "usr", "bin"),
-               os.path.join(util.get_script_path(), "tmp", "root", "etc", args.ide),
-               os.path.join(util.get_script_path(), "tmp", "root", "etc", "sysctl.d"),
-               os.path.join(util.get_script_path(), "tmp", "root", "DEBIAN")]:
-    if not util.create_folder(folder):
-        logger.error("%s can not be created." % folder)
-        sys.exit(-1)
+for folder in [os.path.join(script_path, "tmp"),
+               os.path.join(build_root, "usr", "share", "jetbrains", appname),
+               os.path.join(build_root, "usr", "share", "applications"),
+               os.path.join(build_root, "usr", "bin"),
+               os.path.join(build_root, "etc", args.ide),
+               os.path.join(build_root, "etc", "sysctl.d"),
+               os.path.join(build_root, "DEBIAN")]:
+#     if not util.create_folder(folder):
+        if not os.path.exists(folder): # and not os.makedirs(folder):
+            os.makedirs(folder)
+            #logger.error("%s cannot be created." % folder)
+            #sys.exit(-1)
 
-if not util.check_folder(os.path.join(util.get_script_path(), "data"), logger, False, False):
+if not util.check_folder(os.path.join(script_path, "data"), logger, False, False):
     cleanup(-1, logger)
 
-if not util.check_folder(os.path.join(util.get_script_path(), "data", args.ide), logger, False, False):
+if not util.check_folder(os.path.join(script_path, "data", args.ide), logger, False, False):
     cleanup(-1, logger)
 
-if not util.check_folder(os.path.join(util.get_script_path(), "data", args.ide, "debian"), logger, False, False):
+if not util.check_folder(os.path.join(script_path, "data", args.ide, "debian"), logger, False, False):
     cleanup(-1, logger)
 
 # Checking files
 for file in ["control.in", "postinst", "sysctl-99.conf"]:
-    if not util.check_file_exists(os.path.join(util.get_script_path(), "data", args.ide, "debian", file)) and not \
-            util.check_file_readable(os.path.join(util.get_script_path(), "data", args.ide, "debian", file)):
+    if not util.check_file_exists(os.path.join(script_path, "data", args.ide, "debian", file)) and not \
+            util.check_file_readable(os.path.join(script_path, "data", args.ide, "debian", file)):
         logger.error("%s does not exist or is not readable." % file)
         cleanup(-1, logger)
 
 for file in ["LICENSE", "Makefile", "pkginfo.in", "prototype.in", "icon.desktop", "start.sh", "vmoptions.README"]:
-    if not util.check_file_exists(os.path.join(util.get_script_path(), "data", args.ide, file)) and not \
-            util.check_file_readable(os.path.join(util.get_script_path(), "data", args.ide, file)):
+    if not util.check_file_exists(os.path.join(script_path, "data", args.ide, file)) and not \
+            util.check_file_readable(os.path.join(script_path, "data", args.ide, file)):
         logger.error("%s does not exist or is not readable." % file)
         cleanup(-1, logger)
 
 # Download URL
-if util.check_file_exists(os.path.join(util.get_script_path(), "tmp", link.split("/")[-1])):
-    if not util.delete_file(os.path.join(util.get_script_path(), "tmp", link.split("/")[-1]), logger, False):
+if False:
+    if util.check_file_exists(os.path.join(script_path, "tmp", link.split("/")[-1])):
+        if not util.delete_file(os.path.join(script_path, "tmp", link.split("/")[-1]), logger, False):
+            cleanup(-1, logger)
+
+if False:
+    resp = urllib.request.urlretrieve(link, os.path.join(script_path, "tmp", link.split("/")[-1]), util.progress_hook)
+    if resp is None or resp[1]["Connection"] != "close" or int(resp[1]["Content-Length"]) < 100000:
+        logger.error("Error while downloading '%s'." % os.path.join(script_path, "tmp", link.split("/")[-1]))
         cleanup(-1, logger)
 
-resp = urllib.request.urlretrieve(link, os.path.join(util.get_script_path(), "tmp", link.split("/")[-1]), util.progress_hook)
-if resp is None or resp[1]["Connection"] != "close" or int(resp[1]["Content-Length"]) < 100000:
-    logger.error("Error while downloading '%s'." % os.path.join(util.get_script_path(), "tmp", link.split("/")[-1]))
-    cleanup(-1, logger)
-
 if not util.run_cmd("tar --strip-components 1 -C %s -zxf %s" %
-                    (os.path.join(util.get_script_path(), "tmp", "root", "usr", "share", "jetbrains", args.ide),
-                     os.path.join(util.get_script_path(), "tmp", link.split("/")[-1])), logger, False):
+                    (os.path.join(build_root, "usr", "share", "jetbrains", appname),
+                     os.path.join(script_path, "tmp", link.split("/")[-1])), logger, False):
     logger.error("Error while unpacking '%s' to '%s'." %
-                 (os.path.join(util.get_script_path(), "tmp", link.split("/")[-1])),
-                 os.path.join(util.get_script_path(), "tmp", "root", "usr", "share", "jetbrains", args.ide))
+                 (os.path.join(script_path, "tmp", link.split("/")[-1])),
+                 os.path.join(build_root, "usr", "share", "jetbrains", appname))
     cleanup(-1, logger)
 
 # Copy Files
-copyList = [[os.path.join(util.get_script_path(), "data", args.ide, "start.sh"),
-             os.path.join(util.get_script_path(), "tmp", "root", "usr", "bin", args.ide)],
-            [os.path.join(util.get_script_path(), "data", args.ide, "icon.desktop"),
-             os.path.join(util.get_script_path(), "tmp", "root", "usr", "share",
-                          "applications", "%s.desktop" % args.ide)],
-            [os.path.join(util.get_script_path(), "data", args.ide, "vmoptions.README"),
-             os.path.join(util.get_script_path(), "tmp", "root", "etc", args.ide, "%s.vmoptions.README" % args.ide)],
-            [os.path.join(util.get_script_path(), "data", args.ide, "debian", "sysctl-99.conf"),
-             os.path.join(util.get_script_path(), "tmp", "root", "etc", "sysctl.d", "99-%s.conf" % args.ide)],
+copyList = [
+            [os.path.join(script_path, "data", args.ide, "vmoptions.README"),
+             os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname)],
+            [os.path.join(script_path, "data", args.ide, "debian", "sysctl-99.conf"),
+             os.path.join(build_root, "etc", "sysctl.d", "99-%s.conf" % appname)],
             ]
 
 for copyTuple in copyList:
     if not util.copy_file(copyTuple[0], copyTuple[1], logger):
         cleanup(-1, logger)
 
-# Fixing vmoptions file(s)
-file1 = open(os.path.join(util.get_script_path(), "tmp",
-                          "root", "etc", args.ide, "%s.vmoptions.README" % args.ide), "a")
-file2 = open(os.path.join(util.get_script_path(), "tmp",
-                          "root", "usr", "share", "jetbrains", args.ide, "bin", "%s.vmoptions" % args.ide), "r")
-file3 = open(os.path.join(util.get_script_path(), "tmp",
-                          "root", "usr", "share", "jetbrains", args.ide, "bin", "%s.vmoptions2" % args.ide), "w")
-file1.write("\nOriginal pycharm.vmoptions:\n")
-for line in file2:
-    file1.write(line)
-    if "yjpagent" not in line:
-        file3.write(line)
-file1.close()
-file2.close()
-file3.close()
-if not util.delete_file(os.path.join(util.get_script_path(),
-                                     "tmp", "root", "usr", "share", "jetbrains", args.ide, "bin",
-                                     "%s.vmoptions" % args.ide), logger):
-    logger.error("Error while deleting '%s'." %
-                 os.path.join(util.get_script_path(), "tmp", "root", "usr",
-                              "share", "jetbrains", args.ide, "bin", "%s.vmoptions" % args.ide))
-    cleanup(-1, logger)
-if not util.copy_file(os.path.join(util.get_script_path(),
-                                   "tmp", "root", "usr", "share", "jetbrains", args.ide, "bin",
-                                   "%s.vmoptions2" % args.ide),
-                      os.path.join(util.get_script_path(),
-                                   "tmp", "root", "usr", "share",
-                                   "jetbrains", args.ide, "bin",
-                                   "%s.vmoptions" % args.ide), logger):
-    logger.error("Error while copying '%s' to '%s'." % (os.path.join(util.get_script_path(),
-                                                                     "tmp", "root", "usr", "share", "jetbrains",
-                                                                     args.ide, "bin", "%s.vmoptions2" % args.ide),
-                                                        os.path.join(util.get_script_path(), "tmp", "root",
-                                                                     "usr", "share", "jetbrains", args.ide,
-                                                                     "bin", "%s.vmoptions" % args.ide)))
-if not util.delete_file(os.path.join(util.get_script_path(),
-                                     "tmp", "root", "usr", "share", "jetbrains", args.ide, "bin",
-                                     "%s.vmoptions2" % args.ide), logger):
-    logger.error("Error while deleting '%s'." % os.path.join(util.get_script_path(),
-                                                             "tmp", "root", "usr", "share", "jetbrains", args.ide,
-                                                             "bin", "%s.vmoptions2" % args.ide))
-    cleanup(-1, logger)
+fix_vm_options(build_root, args.ide, appname, bits="")
 
 # Copy files that needed fixes (inserts ide name etc.)
-copyList = [[os.path.join(util.get_script_path(), "data", args.ide, "debian", "postinst"),
-             os.path.join(util.get_script_path(), "tmp", "root", "DEBIAN", "postinst")],
-            [os.path.join(util.get_script_path(), "data", args.ide, "debian", "templates"),
-             os.path.join(util.get_script_path(), "tmp", "root", "DEBIAN", "templates")],
-            [os.path.join(util.get_script_path(), "data", args.ide, "debian", "control.in"),
-             os.path.join(util.get_script_path(), "tmp", "root", "DEBIAN", "control")]
+copyList = [
+            [os.path.join(script_path, "data", args.ide, "icon.desktop"),
+             os.path.join(build_root, "usr", "share",
+                          "applications", "%s.desktop" % appname)],
+            [os.path.join(script_path, "data", args.ide, "start.sh"),
+             os.path.join(build_root, "usr", "bin", appname)],
+            [os.path.join(script_path, "data", args.ide, "debian", "postinst"),
+             os.path.join(build_root, "DEBIAN", "postinst")],
+            [os.path.join(script_path, "data", args.ide, "debian", "templates"),
+             os.path.join(build_root, "DEBIAN", "templates")],
+            [os.path.join(script_path, "data", args.ide, "debian", "control.in"),
+             os.path.join(build_root, "DEBIAN", "control")]
             ]
 
 for copyTuple in copyList:
@@ -292,38 +299,40 @@ for copyTuple in copyList:
                 .replace("OLD1", oldEdition)
                 .replace("OLD2", oldEdition.upper())
                 .replace("OLD3", otherOldEdition)
-                .replace("OLD4", otherOldEdition.upper()))
+                .replace("OLD4", otherOldEdition.upper())
+                .replace("APPNAME", appname)
+                )
     file1.close()
     file2.close()
 
 # Chmod Start Skript and sysctl
-for file in [os.path.join(util.get_script_path(), "tmp", "root", "usr", "bin", args.ide),
-             os.path.join(util.get_script_path(), "tmp", "root", "etc", "sysctl.d", "99-%s.conf" % args.ide),
-             os.path.join(util.get_script_path(), "tmp", "root", "DEBIAN", "postinst")]:
+for file in [os.path.join(build_root, "usr", "bin", appname),
+             os.path.join(build_root, "etc", "sysctl.d", "99-%s.conf" % appname),
+             os.path.join(build_root, "DEBIAN", "postinst")]:
     if not util.run_cmd("chmod +rx %s" % file, logger, False):
         logger.error("Error while running chmod +rx on '%s'." % file)
         cleanup(-1, logger)
 
-if util.check_file_exists(os.path.join(util.get_script_path(), "tmp", "fakeroot.save")):
-    if not util.delete_file(os.path.join(util.get_script_path(), "tmp", "fakeroot.save"), logger, False):
+if util.check_file_exists(os.path.join(script_path, "tmp", "fakeroot.save")):
+    if not util.delete_file(os.path.join(script_path, "tmp", "fakeroot.save"), logger, False):
         cleanup(-1, logger)
 
-file1 = open(os.path.join(util.get_script_path(), "tmp", "fakeroot.save"), "w")
+file1 = open(os.path.join(script_path, "tmp", "fakeroot.save"), "w")
 file1.write("")
 file1.close()
 
 # package it!
-cmd = "fakeroot -i %s -s %s -- chown -R root:root %s" % (os.path.join(util.get_script_path(), "tmp", "fakeroot.save"),
-                                                         os.path.join(util.get_script_path(), "tmp", "fakeroot.save"),
-                                                         os.path.join(util.get_script_path(), "tmp", "root"))
+cmd = "fakeroot -i %s -s %s -- chown -R root:root %s" % (os.path.join(script_path, "tmp", "fakeroot.save"),
+                                                         os.path.join(script_path, "tmp", "fakeroot.save"),
+                                                         os.path.join(build_root))
 if not util.run_cmd(cmd, logger, False):
     logger.error("Error while exexuting '%s'." % cmd)
     cleanup(-1, logger)
 
-cmd = "fakeroot -i %s -s %s -- dpkg-deb -b %s %s" % (os.path.join(util.get_script_path(), "tmp", "fakeroot.save"),
-                                                     os.path.join(util.get_script_path(), "tmp", "fakeroot.save"),
-                                                     os.path.join(util.get_script_path(), "tmp", "root"),
-                                                     os.path.join(util.get_script_path(),
+cmd = "fakeroot -i %s -s %s -- dpkg-deb -b %s %s" % (os.path.join(script_path, "tmp", "fakeroot.save"),
+                                                     os.path.join(script_path, "tmp", "fakeroot.save"),
+                                                     os.path.join(build_root),
+                                                     os.path.join(script_path,
                                                                   "tmp", "%s-%s-%s.deb"
                                                                   % (args.ide, args.edition, version.group())))
 if not util.run_cmd(cmd, logger, False):
@@ -332,26 +341,26 @@ if not util.run_cmd(cmd, logger, False):
 
 # copy package
 if not util.check_file_exists(
-        os.path.join(util.get_script_path(), "tmp", "%s-%s-%s.deb" % (args.ide, args.edition, version.group()))):
+        os.path.join(script_path, "tmp", "%s-%s-%s.deb" % (args.ide, args.edition, version.group()))):
     logger.error("Error '%s' was not created." %
-                 os.path.join(util.get_script_path(),
+                 os.path.join(script_path,
                               "tmp", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())))
     cleanup(-1, logger)
 
 if not util.copy_file(
-        os.path.join(util.get_script_path(), "tmp", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
-        os.path.join(util.get_script_path(), "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
+        os.path.join(script_path, "tmp", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
+        os.path.join(script_path, "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
         logger):
     cleanup(-1, logger)
 
 # cleanup
-# if util.check_file_exists(os.path.join(util.get_script_path(), "tmp", "fakeroot.save")):
-#     if not util.delete_file(os.path.join(util.get_script_path(), "tmp", "fakeroot.save"), logger, False):
+# if util.check_file_exists(os.path.join(script_path, "tmp", "fakeroot.save")):
+#     if not util.delete_file(os.path.join(script_path, "tmp", "fakeroot.save"), logger, False):
 #         cleanup(-1, logger)
 
 print("Finished packaging %s to %s. Install now with dpkg -i %s."
       % (args.ide,
-         os.path.join(util.get_script_path(), "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
-         os.path.join(util.get_script_path(), "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group()))))
+         os.path.join(script_path, "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
+         os.path.join(script_path, "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group()))))
 cleanup(0, logger)
 sys.exit(0)

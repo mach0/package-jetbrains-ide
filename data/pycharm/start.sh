@@ -21,9 +21,9 @@ paths="
 /usr/jdk/instances/jdk1.5.0
 /usr/lib/jvm/java-5-sun"
 
-if [ -r /etc/default/pycharm ]
+if [ -r /etc/default/APPNAME ]
 then
-  . /etc/default/pycharm
+  . /etc/default/APPNAME
 fi
 
 if [ -z "$JDK_HOME" ]
@@ -45,7 +45,7 @@ then
   do
     echo $path >/dev/stderr
   done
-  echo "Either install a JDK in one of those locations or configure JDK_HOME in /etc/default/pycharm:" >/dev/stderr
+  echo "Either install a JDK in one of those locations or configure JDK_HOME in /etc/default/APPNAME:" >/dev/stderr
   exit 1
 fi
 
@@ -54,18 +54,18 @@ export JDK_HOME
 
 if [ -z "$PYCHARM_VM_OPTIONS" ]
 then
-  if [ -r "$HOME/.pycharm.vmoptions" ]
+  if [ -r "$HOME/.APPNAME.vmoptions" ]
   then
-    PYCHARM_VM_OPTIONS="$HOME/.pycharm.vmoptions"
+    PYCHARM_VM_OPTIONS="$HOME/.APPNAME.vmoptions"
     export PYCHARM_VM_OPTIONS
   else
-    if [ -r "/etc/pycharm/pycharm.vmoptions" ]
+    if [ -r "/etc/pycharm/APPNAME.vmoptions" ]
     then
-      PYCHARM_VM_OPTIONS="/etc/pycharm/pycharm.vmoptions"
+      PYCHARM_VM_OPTIONS="/etc/pycharm/APPNAME.vmoptions"
       export PYCHARM_VM_OPTIONS
     fi
   fi
 fi
 
-exec /usr/share/jetbrains/pycharm/bin/pycharm.sh "$@"
+exec /usr/share/jetbrains/APPNAME/bin/pycharm.sh "$@"
 

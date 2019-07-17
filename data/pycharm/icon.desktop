@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=PyCharm
+Name=PyCharm-EDITION
 Comment=The Most Intelligent Python IDE
-Exec=/usr/bin/pycharm
+Exec=/usr/bin/APPNAME
 Terminal=false
 Type=Application
 StartupNotify=true
-Icon=/usr/share/jetbrains/pycharm/bin/pycharm.png
+Icon=/usr/share/jetbrains/APPNAME/bin/pycharm.png
 Categories=Development;IDE;Debugger;Profiling
