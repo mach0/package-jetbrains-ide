@@ -128,6 +128,7 @@ parser.add_argument("-l", "--list", action='store_true', help="list all supporte
 parser.add_argument("-c", "--check", action='store_true',
                     help="check if installed version is older than the newest version available (needs dpkg)")
 parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
+parser.add_argument('-n', '--no-download', action='store_true', help="skip downloading - assumes already downloaded")
 args = parser.parse_args()
 
 # Configure Logging
@@ -184,7 +185,7 @@ if not util.check_folder(os.path.join(script_path, "output"), logger, False, Tru
         logger.error("%s does not exist and can not be created." % os.path.join(script_path, "output"))
         sys.exit(-1)
 
-if False:
+if not args.no_download:
     if util.check_folder(os.path.join(script_path, "tmp"), logger, False, True):
         if not util.delete_folder(os.path.join(script_path, "tmp"), logger, True):
             logger.error("%s does exist and can not be deleted." % os.path.join(script_path, "tmp"))
@@ -226,12 +227,12 @@ for file in ["LICENSE", "Makefile", "pkginfo.in", "prototype.in", "icon.desktop"
         cleanup(-1, logger)
 
 # Download URL
-if False:
+if not args.no_download:
     if util.check_file_exists(os.path.join(script_path, "tmp", link.split("/")[-1])):
         if not util.delete_file(os.path.join(script_path, "tmp", link.split("/")[-1]), logger, False):
             cleanup(-1, logger)
 
-if False:
+if not args.no_download:
     resp = urllib.request.urlretrieve(link, os.path.join(script_path, "tmp", link.split("/")[-1]), util.progress_hook)
     if resp is None or resp[1]["Connection"] != "close" or int(resp[1]["Content-Length"]) < 100000:
         logger.error("Error while downloading '%s'." % os.path.join(script_path, "tmp", link.split("/")[-1]))
