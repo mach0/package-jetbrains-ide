@@ -2,6 +2,7 @@
 
 
 paths="
+/usr/lib/jvm/default-java
 /usr/lib/jvm/java-8-oracle
 /usr/lib/jvm/java-8-openjdk
 /usr/lib/jvm/java-8-openjdk/jre
