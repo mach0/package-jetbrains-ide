@@ -3,6 +3,12 @@
 
 paths="
 /usr/lib/jvm/default-java
+/usr/lib/jvm/java-17-openjdk-amd64
+/usr/lib/jvm/java-17-openjre-amd64
+/usr/lib/jvm/java-11-openjdk-amd64
+/usr/lib/jvm/java-11-openjre-amd64
+/usr/lib/jvm/java-14-openjdk-amd64
+/usr/lib/jvm/java-14-openjre-amd64
 /usr/lib/jvm/java-8-oracle
 /usr/lib/jvm/java-8-openjdk
 /usr/lib/jvm/java-8-openjdk/jre

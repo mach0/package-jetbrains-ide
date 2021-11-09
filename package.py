@@ -80,7 +80,7 @@ def get_download_link(varnames, edition, log, embeddedJava):
 def fix_vm_options(build_root, ide, appname, bits=""):
     # Fixing vmoptions file(s)
     file1 = open(os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname), "a")
-    file2 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s.vmoptions" % args.ide), "r")
+    file2 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s64.vmoptions" % args.ide), "r")
     file3 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s.vmoptions2" % args.ide), "w")
     file1.write("\nOriginal pycharm.vmoptions:\n")
     for line in file2:
@@ -91,7 +91,7 @@ def fix_vm_options(build_root, ide, appname, bits=""):
     file2.close()
     file3.close()
     fullpath = os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin",
-                                         "%s.vmoptions" % args.ide)
+                                         "%s64.vmoptions" % args.ide)
     if not util.delete_file(fullpath, logger):
         logger.error("Error while deleting '%s'." % fullpath)
         cleanup(-1, logger)
@@ -100,7 +100,7 @@ def fix_vm_options(build_root, ide, appname, bits=""):
                                        "%s.vmoptions2" % args.ide)
     p2 = os.path.join(build_root, "usr", "share",
                                        "jetbrains", appname, "bin",
-                                       "%s.vmoptions" % appname)
+                                       "%s64.vmoptions" % appname)
     if not util.copy_file(p1, p2, logger):
         logger.error("Error while copying '{} to '{}'.".format(p1, p2))
         cleanup(-1, logger)

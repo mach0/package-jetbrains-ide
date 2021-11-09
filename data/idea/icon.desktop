@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=IntelliJ IDEA
+Name=IntelliJ IDEA EDITION
 Comment=The Most Intelligent Java IDE
-Exec=/usr/bin/idea
+Exec=/usr/bin/APPNAME
 Terminal=false
 Type=Application
 StartupNotify=true
-Icon=/usr/share/jetbrains/idea/bin/idea.png
+Icon=/usr/share/jetbrains/APPNAME/bin/idea.png
 Categories=Development;IDE;Debugger;Profiling
