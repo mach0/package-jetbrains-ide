@@ -162,15 +162,16 @@ def run_cmd(cmd, logger, return_output=False, no_error=False):
         else:
             return None
 
+
 def progress_hook(blocknum, blocksize, totalsize):
     max_blocks = round(totalsize/blocksize)
     act_percent = 0
     if blocknum != 0:
         act_percent = float(blocknum)/max_blocks*100.0
-    full_str=""
-    empty_str=""
-    for i in range(1,round(act_percent),10):
-        full_str+="#"
-    empty_str+=" "*(10-len(full_str))
-    sys.stdout.write("\rDownloading [%s%s] %d%%" % (full_str,empty_str,act_percent))
+    full_str = ""
+    empty_str = ""
+    for i in range(1, round(act_percent), 10):
+        full_str += "#"
+    empty_str += " "*(10-len(full_str))
+    sys.stdout.write("\rDownloading [%s%s] %d%%" % (full_str, empty_str, act_percent))
     sys.stdout.flush()

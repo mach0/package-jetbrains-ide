@@ -22,8 +22,8 @@ newVersionURL = "https://data.services.jetbrains.com/products/releases?code=%s&l
 #         VersionRegex greps the regex out of version.js
 supportedIDEs = {"pycharm": [{"community": "PCC", "professional": "PCP"},
                              "[0-9]+\.[0-9]+(\.[0-9]+){0,1}"],
-                 "idea":    [{"community": "IIC", "professional": "IIU"},
-                             "[0-9]+\.[0-9]+(\.[0-9]+){0,1}"]
+                 "idea": [{"community": "IIC", "professional": "IIU"},
+                          "[0-9]+\.[0-9]+(\.[0-9]+){0,1}"]
                  }
 supportedEditions = ['community', 'professional']
 
@@ -36,7 +36,7 @@ def cleanup(code, log):
     sys.exit(code)
 
 
-def get_download_link(varnames, edition, log, embeddedJava):
+def get_download_link(varnames, edition, log, embeddedjava):
     varname = varnames[edition]
     try:
         response = urllib.request.urlopen(newVersionURL % varname, timeout=10)
@@ -56,7 +56,7 @@ def get_download_link(varnames, edition, log, embeddedJava):
                       (newVersionURL % varname, sys.exc_info()[0]))
             return None
         linuxKey = 'linux'
-        if not embeddedJava:
+        if not embeddedjava:
             linuxKey = 'linuxWithoutJDK'
 
         if varname in parsedjson.keys():
@@ -77,10 +77,12 @@ def get_download_link(varnames, edition, log, embeddedJava):
             log.error("Error while parsing '%s': No '%s' in dictionary." % (newVersionURL % varname, varname))
     return None
 
+
 def fix_vm_options(build_root, ide, appname, bits=""):
     # Fixing vmoptions file(s)
     file1 = open(os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname), "a")
-    file2 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s64.vmoptions" % args.ide), "r")
+    file2 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s64.vmoptions" % args.ide),
+                 "r")
     file3 = open(os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin", "%s.vmoptions2" % args.ide), "w")
     file1.write("\nOriginal pycharm.vmoptions:\n")
     for line in file2:
@@ -91,26 +93,25 @@ def fix_vm_options(build_root, ide, appname, bits=""):
     file2.close()
     file3.close()
     fullpath = os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin",
-                                         "%s64.vmoptions" % args.ide)
+                            "%s64.vmoptions" % args.ide)
     if not util.delete_file(fullpath, logger):
         logger.error("Error while deleting '%s'." % fullpath)
         cleanup(-1, logger)
 
     p1 = os.path.join(build_root, "usr", "share", "jetbrains", appname, "bin",
-                                       "%s.vmoptions2" % args.ide)
+                      "%s.vmoptions2" % args.ide)
     p2 = os.path.join(build_root, "usr", "share",
-                                       "jetbrains", appname, "bin",
-                                       "%s64.vmoptions" % appname)
+                      "jetbrains", appname, "bin",
+                      "%s64.vmoptions" % args.ide)
     if not util.copy_file(p1, p2, logger):
         logger.error("Error while copying '{} to '{}'.".format(p1, p2))
         cleanup(-1, logger)
     fullpath = os.path.join(build_root, "usr", "share", "jetbrains",
-                                         appname, "bin",
-                                         "%s.vmoptions2" % args.ide)
+                            appname, "bin",
+                            "%s.vmoptions2" % args.ide)
     if not util.delete_file(fullpath, logger):
         logger.error(fullpath)
         cleanup(-1, logger)
-
 
 
 # Configure ArgumentParser
@@ -122,7 +123,7 @@ parser.add_argument("-e", "--edition", metavar="EDITION", default=supportedEditi
                     choices=supportedEditions, help="Which Edition should be packaged?")
 parser.add_argument("-i", "--ide", metavar="IDE", choices=supportedIDEs.keys(), default=list(supportedIDEs.keys())[0],
                     help="Which IDE should be packaged?")
-parser.add_argument("-j", "--java", metavar="JAVA", choices={'y','n'}, default='y',
+parser.add_argument("-j", "--java", metavar="JAVA", choices={'y', 'n'}, default='y',
                     help="Which IDE should be packaged?")
 parser.add_argument("-l", "--list", action='store_true', help="list all supported IDEs")
 parser.add_argument("-c", "--check", action='store_true',
@@ -149,7 +150,7 @@ for tool in ["tar", "dpkg", "fakeroot", "dpkg-deb"]:
         sys.exit(-1)
 
 # Get URL
-link = get_download_link(supportedIDEs[args.ide][0], args.edition, logger, args.java!='n')
+link = get_download_link(supportedIDEs[args.ide][0], args.edition, logger, args.java != 'n')
 
 if link is None:
     logger.error("Could not get url for %s." % args.ide)
@@ -174,7 +175,6 @@ if args.check:
         print("%s %s is not installed." % (args.ide, args.edition))
     sys.exit(0)
 
-
 appname = "{}-{}".format(args.ide, args.edition)
 script_path = util.get_script_path()
 build_root = os.path.join(script_path, "tmp", "root")
@@ -198,11 +198,11 @@ for folder in [os.path.join(script_path, "tmp"),
                os.path.join(build_root, "etc", args.ide),
                os.path.join(build_root, "etc", "sysctl.d"),
                os.path.join(build_root, "DEBIAN")]:
-#     if not util.create_folder(folder):
-        if not os.path.exists(folder): # and not os.makedirs(folder):
-            os.makedirs(folder)
-            #logger.error("%s cannot be created." % folder)
-            #sys.exit(-1)
+    #     if not util.create_folder(folder):
+    if not os.path.exists(folder):  # and not os.makedirs(folder):
+        os.makedirs(folder)
+        # logger.error("%s cannot be created." % folder)
+        # sys.exit(-1)
 
 if not util.check_folder(os.path.join(script_path, "data"), logger, False, False):
     cleanup(-1, logger)
@@ -248,11 +248,11 @@ if not util.run_cmd("tar --strip-components 1 -C %s -zxf %s" %
 
 # Copy Files
 copyList = [
-            [os.path.join(script_path, "data", args.ide, "vmoptions.README"),
-             os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname)],
-            [os.path.join(script_path, "data", args.ide, "debian", "sysctl-99.conf"),
-             os.path.join(build_root, "etc", "sysctl.d", "99-%s.conf" % appname)],
-            ]
+    [os.path.join(script_path, "data", args.ide, "vmoptions.README"),
+     os.path.join(build_root, "etc", args.ide, "%s.vmoptions.README" % appname)],
+    [os.path.join(script_path, "data", args.ide, "debian", "sysctl-99.conf"),
+     os.path.join(build_root, "etc", "sysctl.d", "99-%s.conf" % appname)],
+]
 
 for copyTuple in copyList:
     if not util.copy_file(copyTuple[0], copyTuple[1], logger):
@@ -262,18 +262,18 @@ fix_vm_options(build_root, args.ide, appname, bits="")
 
 # Copy files that needed fixes (inserts ide name etc.)
 copyList = [
-            [os.path.join(script_path, "data", args.ide, "icon.desktop"),
-             os.path.join(build_root, "usr", "share",
-                          "applications", "%s.desktop" % appname)],
-            [os.path.join(script_path, "data", args.ide, "start.sh"),
-             os.path.join(build_root, "usr", "bin", appname)],
-            [os.path.join(script_path, "data", args.ide, "debian", "postinst"),
-             os.path.join(build_root, "DEBIAN", "postinst")],
-            [os.path.join(script_path, "data", args.ide, "debian", "templates"),
-             os.path.join(build_root, "DEBIAN", "templates")],
-            [os.path.join(script_path, "data", args.ide, "debian", "control.in"),
-             os.path.join(build_root, "DEBIAN", "control")]
-            ]
+    [os.path.join(script_path, "data", args.ide, "icon.desktop"),
+     os.path.join(build_root, "usr", "share",
+                  "applications", "%s.desktop" % appname)],
+    [os.path.join(script_path, "data", args.ide, "start.sh"),
+     os.path.join(build_root, "usr", "bin", appname)],
+    [os.path.join(script_path, "data", args.ide, "debian", "postinst"),
+     os.path.join(build_root, "DEBIAN", "postinst")],
+    [os.path.join(script_path, "data", args.ide, "debian", "templates"),
+     os.path.join(build_root, "DEBIAN", "templates")],
+    [os.path.join(script_path, "data", args.ide, "debian", "control.in"),
+     os.path.join(build_root, "DEBIAN", "control")]
+]
 
 for copyTuple in copyList:
     # Check is destination exists
@@ -302,11 +302,11 @@ for copyTuple in copyList:
                 .replace("OLD3", otherOldEdition)
                 .replace("OLD4", otherOldEdition.upper())
                 .replace("APPNAME", appname)
-                )
+        )
     file1.close()
     file2.close()
 
-# Chmod Start Skript and sysctl
+# Chmod Start Script and sysctl
 for file in [os.path.join(build_root, "usr", "bin", appname),
              os.path.join(build_root, "etc", "sysctl.d", "99-%s.conf" % appname),
              os.path.join(build_root, "DEBIAN", "postinst")]:
@@ -359,7 +359,7 @@ if not util.copy_file(
 #     if not util.delete_file(os.path.join(script_path, "tmp", "fakeroot.save"), logger, False):
 #         cleanup(-1, logger)
 
-print("Finished packaging %s to %s. Install now with dpkg -i %s."
+print("Finished packaging %s to %s.\n Install now with:\ndpkg -i %s"
       % (args.ide,
          os.path.join(script_path, "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group())),
          os.path.join(script_path, "output", "%s-%s-%s.deb" % (args.ide, args.edition, version.group()))))
